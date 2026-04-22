@@ -1,0 +1,48 @@
+# Build artifacts
+build/
+build_fuzz/
+out/
+cmake-build-*/
+coverage_report/
+
+# IDE and editor files
+.vs/
+.vscode/
+*.user
+*.suo
+*.VC.db
+*.VC.opendb
+
+# Python environment and cache
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Runtime and benchmark outputs
+benchmark/runs/
+benchmark/adhoc/
+benchmark/onnx_sync_report.json
+benchmark/results/
+fuzz_artifacts/
+downloads/
+transcribe_debug.txt
+test_transcribe.wav
+
+# Local model artifacts (large)
+deps/
+models/*.onnx
+models/**/*.onnx
+
+# Binary outputs
+*.exe
+*.dll
+*.so
+*.dylib
+*.a
+*.lib
+
+# OS noise
+.DS_Store
+Thumbs.db

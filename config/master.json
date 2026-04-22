@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "vad": {
+    "model": "silero",
+    "path": "models/silero_v5.onnx",
+    "threshold": 0.8,
+    "hangover_ms": 400
+  },
+  "asr": {
+    "model": "moonshine",
+    "family": "",
+    "runtime": "auto",
+    "path": "models/moonshine_tiny.onnx",
+    "chunk_ms": 500,
+    "beam_size": 1
+  },
+  "llm": {
+    "enabled": false,
+    "model": "smollm2",
+    "path": "models/smollm2_360m.onnx",
+    "quantization": "int4"
+  },
+  "stability": {
+    "hold_ms": 250,
+    "history_ms": 1000,
+    "hold_words": 3
+  },
+  "provider": "cpu"
+}

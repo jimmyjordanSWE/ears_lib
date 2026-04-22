@@ -1,0 +1,9 @@
+{
+  "name": "ears",
+  "version": "0.1.0",
+  "dependencies": [
+    "onnxruntime",
+    "nlohmann-json"
+  ],
+  "builtin-baseline": "2024.01.12"
+}
