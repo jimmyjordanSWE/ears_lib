@@ -52,18 +52,18 @@ inline std::string default_provider_for_runtime(std::string const& runtime_id) {
 inline std::vector<std::string> runtime_default_provider_chain(std::string const& runtime_id) {
   std::string runtime = normalize_runtime_id(runtime_id);
   if (runtime == "tensorrt") {
-    return {"tensorrt", "cuda", "cpu"};
+    return {"tensorrt", "cuda"};
   }
   if (runtime == "openvino") {
-    return {"openvino_device", "cpu"};
+    return {"openvino_device"};
   }
   if (runtime == "coreml") {
-    return {"coreml_ep", "cpu"};
+    return {"coreml_ep"};
   }
   if (runtime == "qnn") {
-    return {"qnn_ep", "cpu"};
+    return {"qnn_ep"};
   }
-  return {"cuda", "directml", "coreml_ep", "openvino_device", "qnn_ep", "migraphx", "cpu"};
+  return {"cuda", "directml", "coreml_ep", "openvino_device", "qnn_ep", "migraphx"};
 }
 
 }  // namespace ears::internal

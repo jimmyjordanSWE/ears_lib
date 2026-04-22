@@ -7,18 +7,14 @@ file(TO_CMAKE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/config/master.json" EARS_MASTER_
 option(EARS_USE_CUDA "Enable CUDA provider for ONNX Runtime" OFF)
 option(EARS_NO_ONNX "Build without ONNX (skeleton/demo only, no VAD/ASR/LLM)" OFF)
 option(EARS_SANITIZE "Build with AddressSanitizer and UndefinedBehaviorSanitizer (Clang only)" OFF)
-option(EARS_ENABLE_TENSORRT_BACKEND "Enable TensorRT backend registration" ON)
-option(EARS_ENABLE_OPENVINO_BACKEND "Enable OpenVINO backend registration" ON)
-option(EARS_ENABLE_COREML_BACKEND "Enable CoreML backend registration" ON)
-option(EARS_ENABLE_QNN_BACKEND "Enable QNN backend registration" ON)
 set(EARS_WARNING_PROFILE "medium" CACHE STRING "Compiler warning profile (low, medium, strict, max)")
 set_property(CACHE EARS_WARNING_PROFILE PROPERTY STRINGS low medium strict max)
 
 set(EARS_HAS_ONNX OFF)
-set(EARS_HAS_TENSORRT ${EARS_ENABLE_TENSORRT_BACKEND})
-set(EARS_HAS_OPENVINO ${EARS_ENABLE_OPENVINO_BACKEND})
-set(EARS_HAS_COREML ${EARS_ENABLE_COREML_BACKEND})
-set(EARS_HAS_QNN ${EARS_ENABLE_QNN_BACKEND})
+set(EARS_HAS_TENSORRT OFF)
+set(EARS_HAS_OPENVINO OFF)
+set(EARS_HAS_COREML OFF)
+set(EARS_HAS_QNN OFF)
 
 if(NOT EARS_NO_ONNX)
   set(ONNXRUNTIME_ROOT "" CACHE PATH "Path to ONNX Runtime install (include + lib)")
@@ -126,11 +122,6 @@ set(EARS_SOURCES
   src/config.cpp
   src/factory.cpp
   src/factory_backends.cpp
-  src/asr/coreml_asr_adapter.cpp
-  src/asr/native_runtime_asr_adapter.cpp
-  src/asr/openvino_asr_adapter.cpp
-  src/asr/qnn_asr_adapter.cpp
-  src/asr/tensorrt_asr_adapter.cpp
   src/mel.cpp
   src/pipeline.cpp
   src/transcribe.cpp
@@ -208,11 +199,12 @@ if(EARS_BUILD_TESTS)
   add_executable(ears_test
     tests/config_test.cpp
     tests/factory_test.cpp
-    tests/native_runtime_runner_test.cpp
-    tests/onnx_asr_common_test.cpp
     tests/pipeline_test.cpp
     tests/types_test.cpp
   )
+  if(EARS_HAS_ONNX)
+    target_sources(ears_test PRIVATE tests/onnx_asr_common_test.cpp)
+  endif()
   ears_apply_warning_profile(ears_test)
   ears_apply_sanitizers(ears_test)
 
@@ -236,4 +228,50 @@ if(EARS_BUILD_TESTS)
 
   include(GoogleTest)
   gtest_discover_tests(ears_test)
+endif()
+
+if(EARS_HAS_ONNX)
+  add_executable(ears_transcribe_cli
+    tools/ears_transcribe_cli.cpp
+  )
+  ears_apply_warning_profile(ears_transcribe_cli)
+  ears_apply_sanitizers(ears_transcribe_cli)
+  target_include_directories(ears_transcribe_cli PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+  )
+  target_link_libraries(ears_transcribe_cli PRIVATE ears)
+
+  add_executable(ears_transcribe2_cli
+    tools/ears_transcribe_cli.cpp
+  )
+  ears_apply_warning_profile(ears_transcribe2_cli)
+  ears_apply_sanitizers(ears_transcribe2_cli)
+  target_include_directories(ears_transcribe2_cli PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+  )
+  target_link_libraries(ears_transcribe2_cli PRIVATE ears)
+
+  add_executable(ears_stream_file_cli
+    tools/ears_stream_file_cli.cpp
+  )
+  ears_apply_warning_profile(ears_stream_file_cli)
+  ears_apply_sanitizers(ears_stream_file_cli)
+  target_include_directories(ears_stream_file_cli PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+  )
+  target_link_libraries(ears_stream_file_cli PRIVATE ears)
+
+  add_executable(ears_inspect_onnx_cli
+    tools/ears_inspect_onnx_cli.cpp
+  )
+  ears_apply_warning_profile(ears_inspect_onnx_cli)
+  ears_apply_sanitizers(ears_inspect_onnx_cli)
+  target_include_directories(ears_inspect_onnx_cli PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${ONNXRUNTIME_INCLUDE_DIR}
+  )
+  target_link_libraries(ears_inspect_onnx_cli PRIVATE ${ONNXRUNTIME_LIBRARY})
+  if(EARS_USE_CUDA AND ONNXRUNTIME_CUDA_LIBRARY)
+    target_link_libraries(ears_inspect_onnx_cli PRIVATE ${ONNXRUNTIME_CUDA_LIBRARY})
+  endif()
 endif()

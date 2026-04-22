@@ -7,10 +7,10 @@
     "hangover_ms": 400
   },
   "asr": {
-    "model": "moonshine",
-    "family": "",
-    "runtime": "auto",
-    "path": "models/moonshine_tiny.onnx",
+    "model": "whisper",
+    "family": "whisper_seq2seq",
+    "runtime": "onnx",
+    "path": "models/whisper-medium_timestamped/onnx",
     "chunk_ms": 500,
     "beam_size": 1
   },
@@ -25,5 +25,5 @@
     "history_ms": 1000,
     "hold_words": 3
   },
-  "provider": "cpu"
+  "provider": "auto"
 }

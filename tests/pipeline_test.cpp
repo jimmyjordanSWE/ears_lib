@@ -640,6 +640,7 @@ TEST(PipelineTest, BindProfile_LightHintsApplyOnNextChunk) {
 }
 
 TEST(PipelineTest, LatencyCriticalHardFailsAfterFiveSecondsNoDecodeAndNeedsRestart) {
+  reset_factory_registry();
   EXPECT_TRUE(register_asr_factory(
       "always-fail-hardfail", [](Config const&) { return std::make_unique<AlwaysFailAsr>(); }));
 
@@ -647,6 +648,8 @@ TEST(PipelineTest, LatencyCriticalHardFailsAfterFiveSecondsNoDecodeAndNeedsResta
   config.vad.model = "dummy";
   config.vad.threshold = 0.0f;
   config.asr.model = "always-fail-hardfail";
+  config.asr.runtime.clear();
+  config.asr.family.clear();
   {
     auto asr = create_asr(config);
     ASSERT_NE(asr, nullptr);
@@ -689,6 +692,7 @@ TEST(PipelineTest, LatencyCriticalHardFailsAfterFiveSecondsNoDecodeAndNeedsResta
 }
 
 TEST(PipelineTest, NonCriticalStreamStaysFailSoftUnderContinuousDecodeErrors) {
+  reset_factory_registry();
   EXPECT_TRUE(register_asr_factory(
       "always-fail-soft", [](Config const&) { return std::make_unique<AlwaysFailAsr>(); }));
 
@@ -696,6 +700,8 @@ TEST(PipelineTest, NonCriticalStreamStaysFailSoftUnderContinuousDecodeErrors) {
   config.vad.model = "dummy";
   config.vad.threshold = 0.0f;
   config.asr.model = "always-fail-soft";
+  config.asr.runtime.clear();
+  config.asr.family.clear();
 
   EarsPipeline pipeline(config);
   std::vector<TranscriptionResult> results;

@@ -83,7 +83,7 @@ inline std::string append_onnx_provider_or_cpu(Ort::SessionOptions& opts,
                                                std::string const& requested_provider) {
   auto try_provider = [&](std::string normalized_provider) -> bool {
     if (normalized_provider.empty() || normalized_provider == "cpu") {
-      return true;
+      return false;
     }
     if (normalized_provider == "cuda") {
       if (!provider_available("CUDAExecutionProvider")) {
@@ -150,7 +150,8 @@ inline std::string append_onnx_provider_or_cpu(Ort::SessionOptions& opts,
     if (try_provider(normalized_requested)) {
       return normalized_requested;
     }
-    return "cpu";
+    throw std::runtime_error("Requested ONNX execution provider unavailable: " +
+                             normalized_requested);
   }
 
   for (std::string const& candidate : runtime_default_provider_chain(runtime_id)) {
@@ -158,7 +159,7 @@ inline std::string append_onnx_provider_or_cpu(Ort::SessionOptions& opts,
       return normalize_provider_id(candidate);
     }
   }
-  return "cpu";
+  throw std::runtime_error("No supported accelerated ONNX execution provider available");
 }
 
 inline std::string resolve_model_file(std::string const& path,

@@ -1,0 +1,15 @@
+loaded audio: .\build\test_audio.f32le samples=219040
+writing callback log: .\out.txt
+creating pipeline provider=cuda
+created stream id=1
+started stream
+push chunk offset=0 count=1600 ts_ns=0
+push chunk offset=1600 count=1600 ts_ns=100000000
+push chunk offset=3200 count=1600 ts_ns=200000000
+push chunk offset=4800 count=1600 ts_ns=300000000
+push chunk offset=6400 count=1600 ts_ns=400000000
+push chunk offset=8000 count=1600 ts_ns=500000000
+push chunk offset=9600 count=1600 ts_ns=600000000
+push chunk offset=11200 count=1600 ts_ns=700000000
+push chunk offset=12800 count=1600 ts_ns=800000000
+push chunk offset=14400 count=1600 ts_ns=900000000

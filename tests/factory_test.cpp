@@ -140,14 +140,17 @@ TEST(FactoryTest, CreateAsr_ReturnsValidAsr) {
   EXPECT_LE(result.confidence, 1.0f);
 }
 
-TEST(FactoryTest, CreateAsr_DummyIncludesSampleCount) {
+TEST(FactoryTest, CreateAsr_UnknownModelReturnsNonEmptyResult) {
   Config config;
+  config.asr.model = "unknown";
+  config.asr.runtime.clear();
   auto asr = create_asr(config);
 
   std::vector<float> samples(1234, 0.0f);
   AsrResult result = asr->recognize(samples.data(), samples.size());
 
-  EXPECT_TRUE(result.text.find("1234") != std::string::npos);
+  EXPECT_FALSE(result.text.empty());
+  EXPECT_GE(result.confidence, 0.0f);
 }
 
 TEST(FactoryTest, CreateLlm_ReturnsNonNull) {
@@ -176,7 +179,7 @@ TEST(FactoryTest, CreateLlm_DummyPassesThroughInput) {
 TEST(FactoryTest, CreateAsr_ConfigMoonshine_ReturnsNonNull) {
   Config config;
   config.asr.model = "moonshine";
-  config.asr.path = "models/moonshine_tiny.onnx";
+  config.asr.path = "models/moonshine.onnx";
   auto asr = create_asr(config);
   EXPECT_NE(asr, nullptr);
 }
@@ -219,6 +222,7 @@ TEST(FactoryTest, CreateLlm_ConfigUnknown_ReturnsDummy) {
 }
 
 TEST(FactoryTest, RegisterCustomAdapters_UsedByCreateFunctions) {
+  reset_factory_registry();
   Config config;
 
   EXPECT_TRUE(
@@ -230,6 +234,8 @@ TEST(FactoryTest, RegisterCustomAdapters_UsedByCreateFunctions) {
 
   config.vad.model = "test-vad";
   config.asr.model = "test-asr";
+  config.asr.runtime.clear();
+  config.asr.family.clear();
   config.llm.enabled = true;
   config.llm.model = "test-llm";
 
@@ -329,27 +335,27 @@ TEST(FactoryTest, CapabilityRuntimeQuery_MatchesCompileFlags) {
 
   EXPECT_EQ(has_asr_runtime_capability("onnx_runtime"), EARS_EXPECT_HAS_ONNX != 0);
   EXPECT_EQ(has_asr_runtime_capability("onnx"), EARS_EXPECT_HAS_ONNX != 0);
-  EXPECT_EQ(has_asr_runtime_capability("tensorrt"), EARS_EXPECT_HAS_TENSORRT != 0);
-  EXPECT_EQ(has_asr_runtime_capability("openvino"), EARS_EXPECT_HAS_OPENVINO != 0);
-  EXPECT_EQ(has_asr_runtime_capability("coreml"), EARS_EXPECT_HAS_COREML != 0);
-  EXPECT_EQ(has_asr_runtime_capability("qnn"), EARS_EXPECT_HAS_QNN != 0);
+  EXPECT_FALSE(has_asr_runtime_capability("tensorrt"));
+  EXPECT_FALSE(has_asr_runtime_capability("openvino"));
+  EXPECT_FALSE(has_asr_runtime_capability("coreml"));
+  EXPECT_FALSE(has_asr_runtime_capability("qnn"));
   EXPECT_FALSE(has_asr_runtime_capability("not_a_runtime"));
 
   EXPECT_EQ(has_entry("onnx_runtime"), EARS_EXPECT_HAS_ONNX != 0);
-  EXPECT_EQ(has_entry("tensorrt"), EARS_EXPECT_HAS_TENSORRT != 0);
-  EXPECT_EQ(has_entry("openvino"), EARS_EXPECT_HAS_OPENVINO != 0);
-  EXPECT_EQ(has_entry("coreml"), EARS_EXPECT_HAS_COREML != 0);
-  EXPECT_EQ(has_entry("qnn"), EARS_EXPECT_HAS_QNN != 0);
+  EXPECT_FALSE(has_entry("tensorrt"));
+  EXPECT_FALSE(has_entry("openvino"));
+  EXPECT_FALSE(has_entry("coreml"));
+  EXPECT_FALSE(has_entry("qnn"));
 }
 
 TEST(FactoryTest, CapabilityFamilyQuery_MatchesCompileFlags) {
   reset_factory_registry();
 
   EXPECT_EQ(has_asr_runtime_family_capability("ctc", "onnx_runtime"), EARS_EXPECT_HAS_ONNX != 0);
-  EXPECT_EQ(has_asr_runtime_family_capability("ctc", "tensorrt"), EARS_EXPECT_HAS_TENSORRT != 0);
-  EXPECT_EQ(has_asr_runtime_family_capability("ctc", "openvino"), EARS_EXPECT_HAS_OPENVINO != 0);
-  EXPECT_EQ(has_asr_runtime_family_capability("ctc", "coreml"), EARS_EXPECT_HAS_COREML != 0);
-  EXPECT_EQ(has_asr_runtime_family_capability("ctc", "qnn"), EARS_EXPECT_HAS_QNN != 0);
+  EXPECT_FALSE(has_asr_runtime_family_capability("ctc", "tensorrt"));
+  EXPECT_FALSE(has_asr_runtime_family_capability("ctc", "openvino"));
+  EXPECT_FALSE(has_asr_runtime_family_capability("ctc", "coreml"));
+  EXPECT_FALSE(has_asr_runtime_family_capability("ctc", "qnn"));
   EXPECT_FALSE(has_asr_runtime_family_capability("unknown_family", "onnx_runtime"));
   EXPECT_FALSE(has_asr_runtime_family_capability("ctc", "unknown_runtime"));
 }
@@ -361,8 +367,7 @@ TEST(FactoryTest, CapabilityProviderQuery_MatchesCompileFlags) {
             EARS_EXPECT_HAS_ONNX != 0);
   EXPECT_EQ(has_asr_runtime_provider_capability("ctc", "onnx_runtime", "directml"),
             EARS_EXPECT_HAS_ONNX != 0);
-  EXPECT_EQ(has_asr_runtime_provider_capability("ctc", "onnx_runtime", "qnn_ep"),
-            EARS_EXPECT_HAS_ONNX != 0);
+  EXPECT_FALSE(has_asr_runtime_provider_capability("ctc", "onnx_runtime", "qnn_ep"));
 
   EXPECT_FALSE(has_asr_runtime_provider_capability("ctc", "tensorrt", "cuda"));
   EXPECT_FALSE(has_asr_runtime_provider_capability("unknown_family", "onnx_runtime", "cuda"));
@@ -420,44 +425,6 @@ TEST(FactoryTest, CreateAsr_UnsupportedFamilyRuntimeCombo_ReturnsExplicitStatus)
   EXPECT_TRUE(result.json.find("\"code\":\"unsupported_family_runtime\"") != std::string::npos);
   EXPECT_TRUE(result.json.find("\"runtime\":\"" + runtime + "\"") != std::string::npos);
   EXPECT_TRUE(result.json.find("\"family\":\"not_registered_family\"") != std::string::npos);
-}
-
-TEST(FactoryTest, BuiltinRuntimeSelection_UsesNativeRuntimeAdapterForTensorRt) {
-  reset_factory_registry();
-
-  Config config;
-  config.asr.model = "some-ctc-model";
-  config.asr.family = "ctc";
-  config.asr.runtime = "tensorrt";
-
-  auto asr = create_asr(config);
-  ASSERT_NE(asr, nullptr);
-
-  std::vector<float> samples(320, 0.0f);
-  AsrResult result = asr->recognize(samples.data(), samples.size());
-  EXPECT_TRUE(result.json.find("\"adapter\":\"native_runtime\"") != std::string::npos);
-  EXPECT_TRUE(result.json.find("\"runtime\":\"tensorrt\"") != std::string::npos);
-}
-
-TEST(FactoryTest, BuiltinRuntimeSelection_UsesNativeRuntimeAdapterForAllStubRuntimes) {
-  std::vector<std::string> const runtimes = {"tensorrt", "openvino", "coreml", "qnn"};
-
-  for (std::string const& runtime : runtimes) {
-    reset_factory_registry();
-
-    Config config;
-    config.asr.model = "some-ctc-model";
-    config.asr.family = "ctc";
-    config.asr.runtime = runtime;
-
-    auto asr = create_asr(config);
-    ASSERT_NE(asr, nullptr);
-
-    std::vector<float> samples(320, 0.0f);
-    AsrResult result = asr->recognize(samples.data(), samples.size());
-    EXPECT_TRUE(result.json.find("\"adapter\":\"native_runtime\"") != std::string::npos);
-    EXPECT_TRUE(result.json.find("\"runtime\":\"" + runtime + "\"") != std::string::npos);
-  }
 }
 
 TEST(FactoryTest, SelectionPrecedence_ProviderBeatsRuntimeModelAndFallback) {

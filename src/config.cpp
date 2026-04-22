@@ -65,10 +65,10 @@ DefaultConfigValues builtin_default_values() {
   defaults.vad.threshold = 0.8f;
   defaults.vad.hangover_ms = 400;
 
-  defaults.asr.model = "moonshine";
-  defaults.asr.family = "";
-  defaults.asr.runtime = "auto";
-  defaults.asr.path = "models/moonshine_tiny.onnx";
+  defaults.asr.model = "whisper";
+  defaults.asr.family = "whisper_seq2seq";
+  defaults.asr.runtime = "onnx";
+  defaults.asr.path = "models/whisper-medium_timestamped/onnx";
   defaults.asr.chunk_ms = 500;
   defaults.asr.beam_size = 1;
 
@@ -81,7 +81,7 @@ DefaultConfigValues builtin_default_values() {
   defaults.stability.history_ms = 1000;
   defaults.stability.hold_words = 3;
 
-  defaults.provider = "cpu";
+  defaults.provider = "auto";
   return defaults;
 }
 
@@ -214,9 +214,7 @@ Config parse_config_json_object(nlohmann::json const& j) {
     };
 
     if (runtime == "onnx_runtime") {
-      static std::unordered_set<std::string> const allowed = {
-          "cpu",    "cuda",     "directml", "coreml_ep", "openvino_device",
-          "qnn_ep", "tensorrt", "migraphx"};
+      static std::unordered_set<std::string> const allowed = {"cuda", "directml"};
       if (allowed.find(provider) == allowed.end()) {
         invalid();
       }
@@ -344,9 +342,7 @@ void apply_defaults_from_json(nlohmann::json const& j, DefaultConfigValues& defa
   if (!normalized_provider.empty() && normalized_provider != "auto") {
     bool valid_combo = true;
     if (normalized_runtime == "onnx_runtime") {
-      static std::unordered_set<std::string> const allowed = {
-          "cpu",    "cuda",     "directml", "coreml_ep", "openvino_device",
-          "qnn_ep", "tensorrt", "migraphx"};
+      static std::unordered_set<std::string> const allowed = {"cuda", "directml"};
       valid_combo = (allowed.find(normalized_provider) != allowed.end());
     } else if (normalized_runtime == "tensorrt") {
       valid_combo = (normalized_provider == "tensorrt" || normalized_provider == "cuda" ||

@@ -10,8 +10,6 @@
 #include <vector>
 
 #include "ears/asr/dummy_asr.hpp"
-#include "ears/asr/native_runtime_asr_adapter.hpp"
-#include "ears/internal/env_utils.hpp"
 #include "ears/internal/runtime_id_utils.hpp"
 #include "ears/internal/string_utils.hpp"
 #include "ears/llm/dummy_llm.hpp"
@@ -176,31 +174,6 @@ private:
   std::string runtime_id_;
   std::string family_id_;
 };
-
-enum class NativeRunnerUnavailablePolicy {
-  adapter,
-  model,
-  dummy,
-  error,
-};
-
-NativeRunnerUnavailablePolicy native_runner_unavailable_policy() {
-  std::string raw = internal::to_lower_ascii(
-      internal::trim_copy(internal::getenv_copy("EARS_NATIVE_RUNNER_UNAVAILABLE_POLICY")));
-  if (raw.empty() || raw == "adapter" || raw == "none") {
-    return NativeRunnerUnavailablePolicy::adapter;
-  }
-  if (raw == "error" || raw == "fail") {
-    return NativeRunnerUnavailablePolicy::error;
-  }
-  if (raw == "dummy") {
-    return NativeRunnerUnavailablePolicy::dummy;
-  }
-  if (raw == "model") {
-    return NativeRunnerUnavailablePolicy::model;
-  }
-  return NativeRunnerUnavailablePolicy::adapter;
-}
 
 template <typename RegistryT>
 std::unordered_set<std::string> registry_key_set_locked(RegistryT const& registry) {
@@ -508,26 +481,6 @@ std::unique_ptr<IAutomaticSpeechRecognizer> create_asr(Config const& config) {
       !has_asr_runtime_family_capability(effective_family, effective_runtime)) {
     return std::make_unique<StatusAsr>("unsupported_family_runtime", effective_runtime,
                                        effective_family);
-  }
-
-  if (runtime_explicit && is_native_runtime_id(effective_runtime)) {
-    NativeRuntimeRunnerProbe const probe = probe_native_runtime_runner(effective_runtime);
-    if (!probe.healthy) {
-      NativeRunnerUnavailablePolicy const policy = native_runner_unavailable_policy();
-      if (policy == NativeRunnerUnavailablePolicy::adapter) {
-        // Keep adapter path active; runtime bridge will emit runner diagnostics at recognize-time.
-      } else if (policy == NativeRunnerUnavailablePolicy::error) {
-        return std::make_unique<StatusAsr>("runner_unavailable", effective_runtime,
-                                           effective_family);
-      } else if (policy == NativeRunnerUnavailablePolicy::model) {
-        provider_selected = nullptr;
-        runtime_selected = nullptr;
-      } else if (policy == NativeRunnerUnavailablePolicy::dummy) {
-        provider_selected = nullptr;
-        runtime_selected = nullptr;
-        selected = nullptr;
-      }
-    }
   }
 
   try {

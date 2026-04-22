@@ -29,15 +29,18 @@ public:
         result.confidence = 0.9f;
         return result;
       }
-    } catch (...) {
+      result.text = "[asr_error:no_text]";
+      result.json =
+          asr_json::build_status_metadata("whisper_seq2seq", "onnx_runtime", provider_, "error");
       result.confidence = 0.0f;
+      return result;
+    } catch (...) {
+      result.text = "[asr_error:accelerator_required]";
+      result.json =
+          asr_json::build_status_metadata("whisper_seq2seq", "onnx_runtime", provider_, "error");
+      result.confidence = 0.0f;
+      return result;
     }
-
-    result.text = "[whisper_seq2seq: " + std::to_string(num_samples) + " samples]";
-    result.json =
-        asr_json::build_status_metadata("whisper_seq2seq", "onnx_runtime", provider_, "fallback");
-    result.confidence = 0.5f;
-    return result;
   }
 
 private:

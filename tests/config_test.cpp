@@ -88,10 +88,10 @@ TEST(ConfigTest, LoadConfigFromString_EmptyJson_UsesDefaults) {
   EXPECT_FLOAT_EQ(c.vad.threshold, 0.8f);
   EXPECT_EQ(c.vad.hangover_ms, 400);
 
-  EXPECT_EQ(c.asr.model, "moonshine");
-  EXPECT_EQ(c.asr.family, "");
-  EXPECT_EQ(c.asr.runtime, "auto");
-  EXPECT_EQ(c.asr.path, "models/moonshine_tiny.onnx");
+  EXPECT_EQ(c.asr.model, "whisper");
+  EXPECT_EQ(c.asr.family, "whisper_seq2seq");
+  EXPECT_EQ(c.asr.runtime, "onnx");
+  EXPECT_EQ(c.asr.path, "models/whisper-medium_timestamped/onnx");
   EXPECT_EQ(c.asr.chunk_ms, 500);
   EXPECT_EQ(c.asr.beam_size, 1);
 
@@ -103,7 +103,7 @@ TEST(ConfigTest, LoadConfigFromString_EmptyJson_UsesDefaults) {
   EXPECT_EQ(c.stability.history_ms, 1000);
   EXPECT_EQ(c.stability.hold_words, 3);
 
-  EXPECT_EQ(c.provider, "cpu");
+  EXPECT_EQ(c.provider, "auto");
 }
 
 TEST(ConfigTest, LoadConfigFromString_WithVad_OverridesDefaults) {
@@ -213,11 +213,11 @@ TEST(ConfigTest, LoadConfig_ValidFile_LoadsSuccessfully) {
   std::string tmp_path = "ears_config_test_temp.json";
   std::ofstream f(tmp_path);
   ASSERT_TRUE(f.is_open());
-  f << R"({"schema_version": 1, "provider": "directml"})";
+  f << R"({"schema_version": 1, "provider": "cuda"})";
   f.close();
 
   Config c = load_config(tmp_path);
-  EXPECT_EQ(c.provider, "directml");
+  EXPECT_EQ(c.provider, "cuda");
 
   std::remove(tmp_path.c_str());
 }
@@ -248,7 +248,7 @@ TEST(ConfigTest, ImportConfigJson_RoundTripPreservesCustomValues) {
   config.stability.hold_ms = 12;
   config.stability.history_ms = 34;
   config.stability.hold_words = 2;
-  config.provider = "directml";
+  config.provider = "cuda";
 
   std::string const exported_json = export_effective_config_json(config);
   Config const imported = import_config_json(exported_json);
@@ -261,7 +261,7 @@ TEST(ConfigTest, ImportConfigJson_RejectsUnknownKeys) {
 }
 
 TEST(ConfigTest, ImportConfigJson_MissingSchemaVersion_Throws) {
-  EXPECT_THROW(import_config_json(R"({"provider":"cpu"})"), std::runtime_error);
+  EXPECT_THROW(import_config_json(R"({"provider":"auto"})"), std::runtime_error);
 }
 
 TEST(ConfigTest, ImportConfigJson_UnsupportedSchemaVersion_Throws) {
@@ -303,11 +303,16 @@ TEST(ConfigTest, LoadConfigFromString_MalformedRuntimeProviderCombo_Throws) {
                std::runtime_error);
   EXPECT_THROW(load_config_from_string(R"({"asr":{"runtime":"qnn"},"provider":"cuda"})"),
                std::runtime_error);
+  EXPECT_THROW(load_config_from_string(R"({"asr":{"runtime":"onnx"},"provider":"cpu"})"),
+               std::runtime_error);
+  EXPECT_THROW(load_config_from_string(R"({"asr":{"runtime":"onnx"},"provider":"coreml"})"),
+               std::runtime_error);
 }
 
 TEST(ConfigTest, LoadConfigFromString_ValidRuntimeProviderCombo_Passes) {
+  EXPECT_NO_THROW(load_config_from_string(R"({"asr":{"runtime":"onnx"},"provider":"auto"})"));
+  EXPECT_NO_THROW(load_config_from_string(R"({"asr":{"runtime":"onnx"},"provider":"cuda"})"));
   EXPECT_NO_THROW(load_config_from_string(R"({"asr":{"runtime":"onnx"},"provider":"dml"})"));
-  EXPECT_NO_THROW(load_config_from_string(R"({"asr":{"runtime":"tensorrt"},"provider":"cuda"})"));
 }
 
 TEST(ConfigTest, StrictStartupMode_MissingMasterConfig_Throws) {
