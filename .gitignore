@@ -29,11 +29,15 @@ fuzz_artifacts/
 downloads/
 transcribe_debug.txt
 test_transcribe.wav
+test_audio.*
+transcript*.txt
+tmp_*.txt
+console*.txt
+out.txt
 
-# Local model artifacts (large)
+# Local model artifacts and downloaded metadata/tokenizers
 deps/
-models/*.onnx
-models/**/*.onnx
+models/
 
 # Binary outputs
 *.exe
