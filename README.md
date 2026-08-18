@@ -15,6 +15,22 @@ The result is `ears_lib`, a C++17 prototype for building local transcription pip
 
 This repository is deliberately presented as an experiment, not a finished speech product. The architecture and core pipeline are implemented, while model integration, packaging, and production verification remain incomplete.
 
+## Why local speech infrastructure
+
+I believe computers will need **plug-and-play speech-to-text infrastructure**: a common local layer that applications can use without each application rebuilding capture, streaming, model selection, acceleration, and transcription from scratch.
+
+Speech-to-text should happen on the device and it should feel immediate. Keeping the audio path local can reduce latency, preserve privacy, work without a network connection, and avoid turning every spoken interaction into a cloud request. The most powerful laptops available today can already run useful speech models locally, but the experience is not yet cheap, small, fast, or standardized enough to disappear into every computer.
+
+Several things still need to move together:
+
+- enough fast RAM needs to become less expensive and more widely available
+- local inference throughput and power efficiency need to improve
+- speech models need to become smaller without losing accuracy
+- runtimes need better hardware acceleration and simpler deployment
+- applications need a shared interface instead of one-off model integrations
+
+`Ears` and `ears_lib` are my early, stumbling attempts to explore that missing layer. They are incomplete, but they point toward something I expect will soon be needed on every personal computer: fast, private, on-device speech as ordinary system infrastructure rather than a special cloud feature.
+
 ## The idea in one diagram
 
 ```mermaid
